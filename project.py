@@ -37,8 +37,9 @@ class Itinerary:
     def view_itinerary(self):
         return self.itinerary
 
-# Initialize the planner
-planner = Itinerary()
+# Initialize itinerary in session state if not already present
+if 'planner' not in st.session_state:
+    st.session_state.planner = Itinerary()
 
 # Streamlit app starts here
 st.title("Travel Itinerary Planner")
@@ -51,7 +52,7 @@ end_date = st.sidebar.date_input("End Date")
 accommodation = st.sidebar.text_input("Accommodation")
 
 if st.sidebar.button("Add Destination"):
-    success, message = planner.add_destination(destination, start_date, end_date, accommodation)
+    success, message = st.session_state.planner.add_destination(destination, start_date, end_date, accommodation)
     if success:
         st.sidebar.success(message)
     else:
@@ -59,32 +60,38 @@ if st.sidebar.button("Add Destination"):
 
 # Add activities to a destination
 st.sidebar.header("Add Activities")
-activity_dest = st.sidebar.selectbox("Select Destination", list(planner.itinerary.keys()))
-activity = st.sidebar.text_input("Activity")
+if st.session_state.planner.view_itinerary():
+    activity_dest = st.sidebar.selectbox("Select Destination", list(st.session_state.planner.view_itinerary().keys()))
+    activity = st.sidebar.text_input("Activity")
 
-if st.sidebar.button("Add Activity"):
-    success, message = planner.add_activity(activity_dest, activity)
-    if success:
-        st.sidebar.success(message)
-    else:
-        st.sidebar.error(message)
+    if st.sidebar.button("Add Activity"):
+        success, message = st.session_state.planner.add_activity(activity_dest, activity)
+        if success:
+            st.sidebar.success(message)
+        else:
+            st.sidebar.error(message)
+else:
+    st.sidebar.warning("No destinations added yet.")
 
 # Remove activity from a destination
 st.sidebar.header("Remove Activities")
-remove_activity_dest = st.sidebar.selectbox("Select Destination to Remove Activity From", list(planner.itinerary.keys()))
-remove_activity = st.sidebar.text_input("Activity to Remove")
+if st.session_state.planner.view_itinerary():
+    remove_activity_dest = st.sidebar.selectbox("Select Destination to Remove Activity From", list(st.session_state.planner.view_itinerary().keys()), key='remove_activity_dest')
+    remove_activity = st.sidebar.text_input("Activity to Remove", key='remove_activity')
 
-if st.sidebar.button("Remove Activity"):
-    success, message = planner.remove_activity(remove_activity_dest, remove_activity)
-    if success:
-        st.sidebar.success(message)
-    else:
-        st.sidebar.error(message)
+    if st.sidebar.button("Remove Activity"):
+        success, message = st.session_state.planner.remove_activity(remove_activity_dest, remove_activity)
+        if success:
+            st.sidebar.success(message)
+        else:
+            st.sidebar.error(message)
+else:
+    st.sidebar.warning("No destinations added yet.")
 
 # Main section to display the itinerary
 st.header("Current Itinerary")
 
-itinerary = planner.view_itinerary()
+itinerary = st.session_state.planner.view_itinerary()
 
 if itinerary:
     for dest, details in itinerary.items():
@@ -96,4 +103,5 @@ if itinerary:
         st.write(f"**Activities**: {', '.join(details['activities']) if activities else activities}")
 else:
     st.write("No destinations added yet.")
+
 
